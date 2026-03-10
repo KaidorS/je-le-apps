@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PHP-FPM сервис
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: je-le-app-php
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./src:/var/www
+    networks:
+      - je-le-network
+
+  # Nginx сервер
+  nginx:
+    image: nginx:alpine
+    container_name: je-le-app-nginx
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      - ./src:/var/www
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - je-le-network
+
+  # MySQL база данных
+  db:
+    image: mysql:8.0
+    container_name: je-le-app-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - je-le-network
+
+  # phpMyAdmin (опционально)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: je-le-app-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - je-le-network
+
+networks:
+  je-le-network:
+    driver: bridge
+
+volumes:
+  dbdata:
